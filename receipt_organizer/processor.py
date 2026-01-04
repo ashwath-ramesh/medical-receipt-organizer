@@ -64,8 +64,8 @@ class FileProcessor:
             return pix.tobytes("png")
 
     def _image_to_png(self, image_path: Path) -> bytes:
-        """Convert image file to PNG bytes using PyMuPDF."""
+        """Convert image file to PNG bytes, normalized to DPI limit."""
         with pymupdf.open(str(image_path)) as doc:
             page = doc[0]
-            pix = page.get_pixmap()
+            pix = page.get_pixmap(dpi=self.dpi)
             return pix.tobytes("png")
