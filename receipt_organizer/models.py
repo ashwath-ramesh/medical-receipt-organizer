@@ -44,12 +44,3 @@ class ReceiptData:
                 filtered['amount'] = None
 
         return cls(**filtered)
-
-
-@dataclass
-class FileOperation:
-    """Planned file rename operation."""
-    source_path: str
-    new_name: str
-    extracted_data: ReceiptData
-    error: Optional[str] = None

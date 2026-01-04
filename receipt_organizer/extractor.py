@@ -1,6 +1,6 @@
 """Ollama vision model integration for receipt extraction."""
 import base64
-from ollama import Client, ResponseError
+from ollama import Client
 from .models import ReceiptData
 
 
@@ -72,19 +72,14 @@ class ReceiptExtractor:
         # Encode image as base64
         image_b64 = base64.b64encode(image_bytes).decode('utf-8')
 
-        try:
-            response = self.client.chat(
-                model=self.model,
-                messages=[{
-                    'role': 'user',
-                    'content': EXTRACTION_PROMPT,
-                    'images': [image_b64]
-                }],
-                options={'temperature': 0}  # Deterministic output
-            )
+        response = self.client.chat(
+            model=self.model,
+            messages=[{
+                'role': 'user',
+                'content': EXTRACTION_PROMPT,
+                'images': [image_b64]
+            }],
+            options={'temperature': 0}  # Deterministic output
+        )
 
-            return ReceiptData.from_json(response.message.content)
-
-        except ResponseError:
-            # Return non-receipt marker on error
-            return ReceiptData(is_medical_receipt=False)
+        return ReceiptData.from_json(response.message.content)

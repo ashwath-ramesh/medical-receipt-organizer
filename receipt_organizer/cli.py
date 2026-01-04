@@ -66,7 +66,15 @@ def process_single_file(
         return result
 
     # Extract data via LLM
-    data = extractor.extract(image_bytes)
+    try:
+        data = extractor.extract(image_bytes)
+    except Exception as e:
+        result.error = f"extraction failed: {e}"
+        with print_lock:
+            counter['done'] += 1
+            print(f"[{counter['done']}/{total}] {file_path.name}")
+            print(f"         -> Skipped (extraction failed: {e})")
+        return result
     result.data = data
 
     # Check if it's a medical receipt

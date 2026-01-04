@@ -11,6 +11,7 @@ class FileRenamer:
     PLACEHOLDER_UNKNOWN = "UNKNOWN"
     PLACEHOLDER_REVIEW = "REVIEW"
     MAX_FIELD_LENGTH = 30
+    MAX_CONFLICT_ATTEMPTS = 1000
 
     def sanitize(self, text: Optional[str], max_length: int = MAX_FIELD_LENGTH) -> str:
         """Sanitize text for use in filenames.
@@ -92,27 +93,27 @@ class FileRenamer:
         ext = target.suffix
 
         # Find unique suffix
-        counter = 1
-        while True:
+        for counter in range(1, self.MAX_CONFLICT_ATTEMPTS + 1):
             new_name = f"{stem}_{counter}{ext}"
             if not (directory / new_name).exists():
                 return new_name
-            counter += 1
+        raise RuntimeError(f"Could not resolve filename conflict after {self.MAX_CONFLICT_ATTEMPTS} attempts")
 
-    def execute_rename(self, source: Path, new_name: str, dry_run: bool = False) -> Path:
+    def execute_rename(self, source: Path, new_name: str) -> Path:
         """Rename file to new name in same directory.
 
         Args:
             source: Current file path
             new_name: New filename (not full path)
-            dry_run: If True, don't actually rename
 
         Returns:
-            New file path (or what it would be in dry-run)
+            New file path
         """
         new_path = source.parent / new_name
 
-        if not dry_run:
-            source.rename(new_path)
+        # Validate path stays within source directory (prevent path traversal)
+        if new_path.resolve().parent != source.parent.resolve():
+            raise ValueError(f"Path traversal detected: {new_name}")
 
+        source.rename(new_path)
         return new_path

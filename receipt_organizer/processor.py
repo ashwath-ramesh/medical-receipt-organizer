@@ -58,21 +58,14 @@ class FileProcessor:
 
     def _pdf_to_png(self, pdf_path: Path) -> bytes:
         """Render first page of PDF to PNG bytes."""
-        doc = pymupdf.open(str(pdf_path))
-        try:
+        with pymupdf.open(str(pdf_path)) as doc:
             page = doc[0]  # First page only
             pix = page.get_pixmap(dpi=self.dpi)
             return pix.tobytes("png")
-        finally:
-            doc.close()
 
     def _image_to_png(self, image_path: Path) -> bytes:
         """Convert image file to PNG bytes using PyMuPDF."""
-        # PyMuPDF can also open images
-        doc = pymupdf.open(str(image_path))
-        try:
+        with pymupdf.open(str(image_path)) as doc:
             page = doc[0]
             pix = page.get_pixmap()
             return pix.tobytes("png")
-        finally:
-            doc.close()
