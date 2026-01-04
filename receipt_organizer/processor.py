@@ -1,13 +1,14 @@
 """File discovery and image conversion."""
-import pymupdf  # PyMuPDF
+
 from pathlib import Path
-from typing import Optional
+
+import pymupdf  # PyMuPDF
 
 
 class FileProcessor:
     """Discovers and converts receipt files to images for processing."""
 
-    SUPPORTED_EXTENSIONS = {'.pdf', '.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif'}
+    SUPPORTED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif"}
 
     def __init__(self, dpi: int = 400):
         """Initialize processor.
@@ -34,7 +35,7 @@ class FileProcessor:
         # Remove duplicates and sort
         return sorted(set(files))
 
-    def file_to_image_bytes(self, file_path: Path) -> Optional[bytes]:
+    def file_to_image_bytes(self, file_path: Path) -> bytes | None:
         """Convert file to PNG image bytes for vision model.
 
         For PDFs, renders the first page.
@@ -49,7 +50,7 @@ class FileProcessor:
         suffix = file_path.suffix.lower()
 
         try:
-            if suffix == '.pdf':
+            if suffix == ".pdf":
                 return self._pdf_to_png(file_path)
             else:
                 return self._image_to_png(file_path)

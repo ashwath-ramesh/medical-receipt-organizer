@@ -1,10 +1,13 @@
 """Ollama vision model integration for receipt extraction."""
+
 import base64
+
 from ollama import Client
+
 from .models import ReceiptData
 
-
-EXTRACTION_PROMPT = """Analyze this medical receipt image and extract the following information.
+EXTRACTION_PROMPT = """\
+Analyze this medical receipt image and extract the following information.
 Return ONLY a valid JSON object with these fields:
 
 {
@@ -17,9 +20,10 @@ Return ONLY a valid JSON object with these fields:
 }
 
 CURRENCY DETECTION - Look carefully at the receipt for:
-- Currency symbols: S$ or SGD = "SGD", $ alone with Singapore address = "SGD", RM = "MYR", € = "EUR", £ = "GBP", ¥ = "JPY"
-- If the receipt shows a Singapore clinic, hospital, or address, the currency is SGD
-- Only use "USD" if explicitly shown as USD or if the receipt is from a US provider
+- S$ or SGD = "SGD", $ with Singapore address = "SGD"
+- RM = "MYR", € = "EUR", £ = "GBP", ¥ = "JPY"
+- If the receipt shows a Singapore clinic/hospital/address, use SGD
+- Only use "USD" if explicitly shown or if from a US provider
 - If unclear, infer from the country/region shown on the receipt
 
 If a field is not visible or unclear, use null for that field.
@@ -54,11 +58,18 @@ class ReceiptExtractor:
 
             # Check if our model is available
             if not any(self.model in name for name in model_names):
-                return False, f"Model '{self.model}' not found. Run: ollama pull {self.model}"
+                return (
+                    False,
+                    f"Model '{self.model}' not found. Run: ollama pull {self.model}",
+                )
 
             return True, ""
         except Exception as e:
-            return False, f"Cannot connect to Ollama: {e}\nMake sure Ollama is running: ollama serve"
+            return (
+                False,
+                f"Cannot connect to Ollama: {e}\n"
+                "Make sure Ollama is running: ollama serve",
+            )
 
     def extract(self, image_bytes: bytes) -> ReceiptData:
         """Extract receipt data from image bytes.
@@ -70,16 +81,14 @@ class ReceiptExtractor:
             ReceiptData with extracted fields
         """
         # Encode image as base64
-        image_b64 = base64.b64encode(image_bytes).decode('utf-8')
+        image_b64 = base64.b64encode(image_bytes).decode("utf-8")
 
         response = self.client.chat(
             model=self.model,
-            messages=[{
-                'role': 'user',
-                'content': EXTRACTION_PROMPT,
-                'images': [image_b64]
-            }],
-            options={'temperature': 0}  # Deterministic output
+            messages=[
+                {"role": "user", "content": EXTRACTION_PROMPT, "images": [image_b64]}
+            ],
+            options={"temperature": 0},  # Deterministic output
         )
 
         return ReceiptData.from_json(response.message.content)

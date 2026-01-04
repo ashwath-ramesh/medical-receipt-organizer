@@ -1,14 +1,14 @@
 """CLI entry point using argparse."""
+
 import argparse
 import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
-from .models import ReceiptData
 from .extractor import ReceiptExtractor
+from .models import ReceiptData
 from .processor import FileProcessor
 from .renamer import FileRenamer
 
@@ -16,11 +16,12 @@ from .renamer import FileRenamer
 @dataclass
 class ProcessResult:
     """Result of processing a single file."""
+
     file_path: Path
-    data: Optional[ReceiptData] = None
-    new_name: Optional[str] = None
-    error: Optional[str] = None
-    skipped_reason: Optional[str] = None
+    data: ReceiptData | None = None
+    new_name: str | None = None
+    error: str | None = None
+    skipped_reason: str | None = None
 
 
 # Lock for thread-safe printing and conflict resolution
@@ -36,7 +37,7 @@ def process_single_file(
     verbose: bool,
     confirm: bool,
     counter: dict,
-    total: int
+    total: int,
 ) -> ProcessResult:
     """Process a single file (thread-safe).
 
@@ -60,9 +61,9 @@ def process_single_file(
     if image_bytes is None:
         result.error = "failed to read file"
         with print_lock:
-            counter['done'] += 1
+            counter["done"] += 1
             print(f"[{counter['done']}/{total}] {file_path.name}")
-            print(f"         -> Skipped (failed to read)")
+            print("         -> Skipped (failed to read)")
         return result
 
     # Extract data via LLM
@@ -71,7 +72,7 @@ def process_single_file(
     except Exception as e:
         result.error = f"extraction failed: {e}"
         with print_lock:
-            counter['done'] += 1
+            counter["done"] += 1
             print(f"[{counter['done']}/{total}] {file_path.name}")
             print(f"         -> Skipped (extraction failed: {e})")
         return result
@@ -81,9 +82,9 @@ def process_single_file(
     if not data.is_medical_receipt:
         result.skipped_reason = "not a medical receipt"
         with print_lock:
-            counter['done'] += 1
+            counter["done"] += 1
             print(f"[{counter['done']}/{total}] {file_path.name}")
-            print(f"         -> Skipped (not a medical receipt)")
+            print("         -> Skipped (not a medical receipt)")
         return result
 
     # Generate new filename (thread-safe with lock)
@@ -92,7 +93,7 @@ def process_single_file(
         new_name = renamer.resolve_conflict(file_path.parent, new_name)
         result.new_name = new_name
 
-        counter['done'] += 1
+        counter["done"] += 1
         print(f"[{counter['done']}/{total}] {file_path.name}")
         print(f"         -> {new_name}")
         if verbose:
@@ -105,7 +106,7 @@ def process_single_file(
         if confirm:
             action = "Rename" if not dry_run else "Mark for rename"
             response = input(f"         {action}? [Y/n] ").strip().lower()
-            if response == 'n':
+            if response == "n":
                 print("         Skipped by user")
                 result.skipped_reason = "skipped by user"
                 result.new_name = None  # Don't count as processed
@@ -124,7 +125,7 @@ def process_files(
     verbose: bool,
     workers: int,
     dpi: int = 400,
-    confirm: bool = False
+    confirm: bool = False,
 ) -> tuple[int, int, int]:
     """Process all files in directory.
 
@@ -160,7 +161,7 @@ def process_files(
     print()
 
     # Shared counter for progress
-    counter = {'done': 0}
+    counter = {"done": 0}
 
     # Process files in parallel
     results: list[ProcessResult] = []
@@ -169,8 +170,15 @@ def process_files(
         futures = [
             executor.submit(
                 process_single_file,
-                f, processor, extractor, renamer,
-                dry_run, verbose, confirm, counter, total
+                f,
+                processor,
+                extractor,
+                renamer,
+                dry_run,
+                verbose,
+                confirm,
+                counter,
+                total,
             )
             for f in files
         ]
@@ -191,58 +199,59 @@ def main():
     parser = argparse.ArgumentParser(
         prog="receipt-organizer",
         description="Organize medical receipts using AI-powered extraction. "
-                    "Uses local Ollama - no data leaves your computer.",
+        "Uses local Ollama - no data leaves your computer.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   %(prog)s /path/to/receipts --dry-run -v    Preview renames
   %(prog)s /path/to/receipts -v              Execute renames
   %(prog)s /path/to/receipts --workers 8     Use 8 parallel workers
-        """
+        """,
     )
 
     parser.add_argument(
         "directory",
         type=Path,
-        help="Directory to scan for receipts (scans recursively)"
+        help="Directory to scan for receipts (scans recursively)",
     )
 
     parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Preview renames without executing"
+        "--dry-run", action="store_true", help="Preview renames without executing"
     )
 
     parser.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="store_true",
-        help="Show detailed extraction for each file"
+        help="Show detailed extraction for each file",
     )
 
     parser.add_argument(
         "--model",
         default="qwen2.5vl:7b",
-        help="Ollama vision model to use (default: qwen2.5vl:7b)"
+        help="Ollama vision model to use (default: qwen2.5vl:7b)",
     )
 
     parser.add_argument(
-        "-w", "--workers",
+        "-w",
+        "--workers",
         type=int,
         default=4,
-        help="Number of parallel workers (default: 4)"
+        help="Number of parallel workers (default: 4)",
     )
 
     parser.add_argument(
         "--dpi",
         type=int,
         default=400,
-        help="Image resolution for processing (default: 400)"
+        help="Image resolution for processing (default: 400)",
     )
 
     parser.add_argument(
-        "-y", "--yes",
+        "-y",
+        "--yes",
         action="store_true",
-        help="Skip confirmation prompts (auto-approve all)"
+        help="Skip confirmation prompts (auto-approve all)",
     )
 
     args = parser.parse_args()
@@ -274,7 +283,7 @@ Examples:
         verbose=args.verbose,
         workers=args.workers,
         dpi=args.dpi,
-        confirm=not args.yes
+        confirm=not args.yes,
     )
 
     # Print summary

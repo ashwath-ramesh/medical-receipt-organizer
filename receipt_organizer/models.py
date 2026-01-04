@@ -1,28 +1,31 @@
 """Data models for receipt extraction."""
-from dataclasses import dataclass
-from typing import Optional
+
+from __future__ import annotations
+
 import json
 import re
+from dataclasses import dataclass
 
 
 @dataclass
 class ReceiptData:
     """Extracted receipt information from vision model."""
-    date: Optional[str] = None          # YYYY-MM-DD format
-    provider: Optional[str] = None      # Doctor, clinic, or pharmacy
-    patient: Optional[str] = None       # Patient name
-    amount: Optional[float] = None      # Total amount
-    currency: str = "USD"               # Currency code
-    is_medical_receipt: bool = True     # Whether this is a medical receipt
+
+    date: str | None = None  # YYYY-MM-DD format
+    provider: str | None = None  # Doctor, clinic, or pharmacy
+    patient: str | None = None  # Patient name
+    amount: float | None = None  # Total amount
+    currency: str = "USD"  # Currency code
+    is_medical_receipt: bool = True  # Whether this is a medical receipt
 
     @classmethod
-    def from_json(cls, json_str: str) -> "ReceiptData":
+    def from_json(cls, json_str: str) -> ReceiptData:
         """Parse LLM JSON response into ReceiptData.
 
         Handles malformed JSON by extracting JSON object from response.
         """
         # Try to extract JSON from response (LLM may include extra text)
-        json_match = re.search(r'\{[^{}]*\}', json_str, re.DOTALL)
+        json_match = re.search(r"\{[^{}]*\}", json_str, re.DOTALL)
         if json_match:
             json_str = json_match.group()
 
@@ -37,10 +40,10 @@ class ReceiptData:
         filtered = {k: v for k, v in data.items() if k in valid_fields}
 
         # Handle amount as string or number
-        if 'amount' in filtered and isinstance(filtered['amount'], str):
+        if "amount" in filtered and isinstance(filtered["amount"], str):
             try:
-                filtered['amount'] = float(re.sub(r'[^\d.]', '', filtered['amount']))
+                filtered["amount"] = float(re.sub(r"[^\d.]", "", filtered["amount"]))
             except ValueError:
-                filtered['amount'] = None
+                filtered["amount"] = None
 
         return cls(**filtered)
