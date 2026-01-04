@@ -1,7 +1,8 @@
 """Filename generation and file renaming logic."""
+
 import re
 from pathlib import Path
-from typing import Optional
+
 from .models import ReceiptData
 
 
@@ -13,7 +14,7 @@ class FileRenamer:
     MAX_FIELD_LENGTH = 30
     MAX_CONFLICT_ATTEMPTS = 1000
 
-    def sanitize(self, text: Optional[str], max_length: int = MAX_FIELD_LENGTH) -> str:
+    def sanitize(self, text: str | None, max_length: int = MAX_FIELD_LENGTH) -> str:
         """Sanitize text for use in filenames.
 
         Removes special characters, replaces spaces with camelCase,
@@ -23,11 +24,11 @@ class FileRenamer:
             return self.PLACEHOLDER_UNKNOWN
 
         # Remove special characters except spaces and alphanumeric
-        text = re.sub(r'[^\w\s]', '', text)
+        text = re.sub(r"[^\w\s]", "", text)
 
         # Convert to camelCase-like: "John Doe" -> "JohnDoe"
         words = text.split()
-        text = ''.join(word.capitalize() for word in words)
+        text = "".join(word.capitalize() for word in words)
 
         # Truncate
         if len(text) > max_length:
@@ -35,7 +36,7 @@ class FileRenamer:
 
         return text if text else self.PLACEHOLDER_UNKNOWN
 
-    def format_amount(self, amount: Optional[float], currency: str = "USD") -> str:
+    def format_amount(self, amount: float | None, currency: str = "USD") -> str:
         """Format amount with currency for filename."""
         if amount is None:
             return self.PLACEHOLDER_UNKNOWN
@@ -59,7 +60,7 @@ class FileRenamer:
             New filename (not full path)
         """
         # Date - use REVIEW if missing (needs manual attention)
-        if data.date and re.match(r'\d{4}-\d{2}-\d{2}', data.date):
+        if data.date and re.match(r"\d{4}-\d{2}-\d{2}", data.date):
             date_part = data.date
         else:
             date_part = self.PLACEHOLDER_REVIEW
@@ -97,7 +98,8 @@ class FileRenamer:
             new_name = f"{stem}_{counter}{ext}"
             if not (directory / new_name).exists():
                 return new_name
-        raise RuntimeError(f"Could not resolve filename conflict after {self.MAX_CONFLICT_ATTEMPTS} attempts")
+        msg = f"Could not resolve conflict after {self.MAX_CONFLICT_ATTEMPTS} attempts"
+        raise RuntimeError(msg)
 
     def execute_rename(self, source: Path, new_name: str) -> Path:
         """Rename file to new name in same directory.
