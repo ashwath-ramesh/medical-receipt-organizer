@@ -1,0 +1,17 @@
+[project]
+name = "receipt-organizer"
+version = "0.1.0"
+description = "Organize medical receipts using AI-powered extraction with local Ollama"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pymupdf>=1.24.0",
+    "ollama>=0.3.0",
+]
+
+[project.scripts]
+receipt-organizer = "receipt_organizer.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
